@@ -1,4 +1,4 @@
-@extends('layouts.site', ['title' => 'Pagina niet gevonden'])
+@extends('layouts.site', ['title' => 'Pagina niet gevonden', 'noindex' => true])
 
 @section('content')
     <section class="page-header">

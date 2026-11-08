@@ -76,7 +76,7 @@ class CupLoan extends Model implements HasContract
     {
         static::saved(function (CupLoan $loan): void {
             if ($loan->status === CupLoanStatus::Confirmed && ($loan->wasRecentlyCreated || $loan->wasChanged('status'))) {
-                app(AutoContract::class)->onConfirmed($loan);
+                app(AutoContract::class)->onConfirmed($loan, (bool) settings()->get('cup_contract_auto_send'));
             }
         });
     }

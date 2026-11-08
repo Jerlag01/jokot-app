@@ -45,6 +45,8 @@ class Contracts
             throw new RuntimeException('Dit contract is al ondertekend.');
         }
 
+        Mailing::ensureEnabled();
+
         Mail::to($contract->contractable->contractSignerEmail())->send(new ContractMail($contract));
 
         $contract->update(['status' => ContractStatus::Sent, 'sent_at' => now()]);

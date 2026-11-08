@@ -1,4 +1,4 @@
-@extends('layouts.site', ['title' => 'Mijn gegevens'])
+@extends('layouts.site', ['title' => 'Mijn gegevens', 'noindex' => true])
 
 @section('content')
     <section class="page-header">

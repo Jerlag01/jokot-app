@@ -30,8 +30,19 @@ class AutoContractTest extends TestCase
         $this->actingAs(User::factory()->admin()->create());
     }
 
-    public function test_confirming_a_reservation_sends_the_contract_to_sign(): void
+    public function test_confirming_a_reservation_only_prepares_the_contract_by_default(): void
     {
+        $rental = RentalRequest::factory()->create();
+
+        Livewire::test(ViewRentalRequest::class, ['record' => $rental->getRouteKey()])->callAction('confirm');
+
+        $this->assertSame(ContractStatus::Draft, $rental->fresh()->contract->status);
+        Mail::assertNothingSent();
+    }
+
+    public function test_confirming_a_reservation_sends_the_contract_when_switched_on(): void
+    {
+        settings()->save(['rental_contract_auto_send' => true]);
         $rental = RentalRequest::factory()->create();
 
         Livewire::test(ViewRentalRequest::class, ['record' => $rental->getRouteKey()])->callAction('confirm');
@@ -43,6 +54,7 @@ class AutoContractTest extends TestCase
 
     public function test_an_option_does_not_send_a_contract_and_it_is_only_sent_once(): void
     {
+        settings()->save(['rental_contract_auto_send' => true]);
         $rental = RentalRequest::factory()->create();
 
         $rental->update(['status' => RentalStatus::Option]);
@@ -69,6 +81,7 @@ class AutoContractTest extends TestCase
 
     public function test_a_mail_failure_does_not_block_the_confirmation(): void
     {
+        settings()->save(['rental_contract_auto_send' => true]);
         Mail::shouldReceive('to')->andThrow(new \RuntimeException('SMTP down'));
         $rental = RentalRequest::factory()->create();
 
@@ -76,5 +89,16 @@ class AutoContractTest extends TestCase
 
         $this->assertSame(RentalStatus::Confirmed, $rental->fresh()->status);
         $this->assertSame(ContractStatus::Draft, $rental->fresh()->contract->status);
+    }
+
+    public function test_no_contract_is_sent_automatically_while_mail_is_switched_off(): void
+    {
+        settings()->save(['rental_contract_auto_send' => true, 'mail' => [...(array) settings()->get('mail'), 'enabled' => false]]);
+        $rental = RentalRequest::factory()->create();
+
+        $rental->update(['status' => RentalStatus::Confirmed]);
+
+        $this->assertSame(ContractStatus::Draft, $rental->fresh()->contract->status);
+        Mail::assertNothingSent();
     }
 }

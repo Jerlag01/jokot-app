@@ -3,10 +3,13 @@
 namespace App\Filament\Pages;
 
 use App\Enums\NavigationGroup;
+use App\Filament\Resources\MailTemplates\MailTemplateResource;
 use App\Support\Billit\Billit;
 use App\Support\Billit\BillitClient;
+use App\Support\Mailing;
 use App\Support\Permissions;
 use App\Support\RentalWeekdays;
+use App\Support\Seo;
 use App\Support\Settings as SiteSettings;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -20,6 +23,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\EmbeddedSchema;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
@@ -98,6 +102,20 @@ class Settings extends Page
                                 FileUpload::make('logo')->label('Logo in de footer')->image()->disk('public')->directory('settings')->visibility('public')->helperText('Leeg = het witte Jokot-logo.'),
                             ]),
                     ]),
+                    Tab::make('Zoekmachines')->icon(Heroicon::OutlinedMagnifyingGlass)->schema([
+                        Section::make('Vindbaarheid')
+                            ->description(fn (): string => Seo::indexable()
+                                ? 'Deze site mag geïndexeerd worden. Sitemap voor Google Search Console en Bing Webmaster Tools: '.route('sitemap')
+                                : 'Deze site wordt NIET geïndexeerd'.(app()->isProduction() ? ' (uitgeschakeld hieronder).' : ' (dit is geen productieomgeving: APP_ENV='.app()->environment().').'))
+                            ->columns(2)
+                            ->schema([
+                                Toggle::make('seo.indexable')->label('Zoekmachines mogen de site opnemen')->helperText('Werkt enkel op de productiesite; een testsite wordt nooit geïndexeerd.')->columnSpanFull(),
+                                Textarea::make('seo.description')->label('Standaardbeschrijving')->helperText('Voor pagina\'s zonder eigen "Beschrijving voor Google". Ideaal 120-160 tekens.')->rows(3)->maxLength(300)->columnSpanFull(),
+                                FileUpload::make('seo.share_image')->label('Deelafbeelding')->helperText('Getoond bij delen op Facebook, WhatsApp... Liefst 1200 × 630 pixels. Leeg = foto van de zaal.')->image()->disk('public')->directory('settings')->visibility('public')->columnSpanFull(),
+                                TextInput::make('seo.google_verification')->label('Google Search Console-code')->helperText('Enkel de code uit content="..." van de HTML-tag.'),
+                                TextInput::make('seo.bing_verification')->label('Bing Webmaster-code')->helperText('Enkel de code uit content="...".'),
+                            ]),
+                    ]),
                     Tab::make('Verhuur')->icon(Heroicon::OutlinedHomeModern)->schema([
                         Section::make('Huuraanvragen')
                             ->columns(2)
@@ -117,6 +135,11 @@ class Settings extends Page
                         Section::make('Contracten')
                             ->columns(2)
                             ->schema([
+                                Toggle::make('rental_contract_auto_send')
+                                    ->label('Huurcontract automatisch mailen bij bevestigen')
+                                    ->helperText('Uit = het contract wordt klaargezet en je verstuurt het zelf via "Contract".'),
+                                Toggle::make('cup_contract_auto_send')
+                                    ->label('Wisselbekercontract automatisch mailen bij bevestigen'),
                                 TextInput::make('contract_representative')->label('Vertegenwoordiger van het jeugdhuis')->helperText('Naam die in de contracten als ondertekenaar voor JOC Niel vzw staat.'),
                                 Textarea::make('contract_contact')->label('Contactpersonen in het verhuurcontract')->rows(4),
                             ]),
@@ -231,9 +254,22 @@ class Settings extends Page
         $usesSmtp = fn (Get $get): bool => $get('mail.mailer') === 'smtp';
 
         return Section::make('E-mail')
-            ->description('Hoe de website mails verstuurt (bevestigingen van huuraanvragen, wachtwoord vergeten, ...). Gebruik de knop "Testmail versturen" bovenaan na het opslaan.')
+            ->description(new HtmlString('Hoe de website mails verstuurt (bevestigingen van huuraanvragen, wachtwoord vergeten, ...). Gebruik de knop "Testmail versturen" bovenaan na het opslaan. De teksten van de mails pas je aan bij <a href="'.MailTemplateResource::getUrl().'" style="text-decoration:underline;">Systeem → E-mailsjablonen</a>.'))
             ->columns(2)
             ->schema([
+                Toggle::make('mail.enabled')
+                    ->label('E-mails versturen')
+                    ->helperText('Uit = de website verstuurt geen enkele mail meer (ook geen facturen, contracten of wachtwoord-vergeten). Ze worden enkel in het logbestand genoteerd. De testmail werkt wel.')
+                    ->live()
+                    ->columnSpanFull(),
+                Fieldset::make('Automatische mails')
+                    ->visible(fn (Get $get): bool => (bool) $get('mail.enabled'))
+                    ->columns(1)
+                    ->columnSpanFull()
+                    ->schema(collect(Mailing::automaticTypes())
+                        ->map(fn (string $label, string $type) => Toggle::make('mail.auto_'.$type)->label($label))
+                        ->values()
+                        ->all()),
                 Select::make('mail.mailer')
                     ->label('Verzendmethode')
                     ->options([
@@ -310,7 +346,7 @@ class Settings extends Page
         }
 
         // Nested groups keep the keys hidden fields did not send.
-        foreach (['mail', 'payments', 'billit', 'security', 'stats'] as $group) {
+        foreach (['mail', 'payments', 'billit', 'security', 'stats', 'seo'] as $group) {
             $data[$group] = [...(array) $settings->get($group), ...($data[$group] ?? [])];
         }
 
@@ -413,11 +449,15 @@ class Settings extends Page
                     try {
                         Mail::raw(
                             'Dit is een testmail van de website van '.$settings->siteName().'. De mailinstellingen werken.',
-                            fn ($message) => $message->to($data['recipient'])->subject($settings->siteName().' - testmail'),
+                            fn ($message) => $message->to($data['recipient'])->subject($settings->siteName().' - testmail')
+                                ->getSymfonyMessage()->getHeaders()->addTextHeader(Mailing::TEST_HEADER, '1'),
                         );
 
                         Notification::make()->success()->title('Testmail verstuurd naar '.$data['recipient'])
-                            ->body(config('mail.default') === 'log' ? 'Let op: de verzendmethode is "loggen", de mail staat enkel in storage/logs/laravel.log.' : null)
+                            ->body(collect([
+                                config('mail.default') === 'log' ? 'Let op: de verzendmethode is "loggen", de mail staat enkel in storage/logs/laravel.log.' : null,
+                                Mailing::enabled() ? null : 'E-mails versturen staat uit: andere mails worden niet verstuurd.',
+                            ])->filter()->implode(' ') ?: null)
                             ->send();
                     } catch (Throwable $exception) {
                         Notification::make()->danger()->persistent()

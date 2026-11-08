@@ -1,4 +1,4 @@
-@extends('layouts.site', ['title' => $contract->title()])
+@extends('layouts.site', ['title' => $contract->title(), 'noindex' => true])
 
 @section('content')
     <section class="page-header">

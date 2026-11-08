@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\Permissions;
 use Database\Seeders\JokotModulesSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class RolesTest extends TestCase
@@ -54,5 +55,17 @@ class RolesTest extends TestCase
         $this->assertTrue($user->hasPermission(Permissions::CHECKIN));
         $this->assertTrue($user->hasPermission(Permissions::INVOICES));
         $this->assertFalse($user->hasPermission(Permissions::USERS));
+    }
+
+    public function test_the_admin_command_creates_an_administrator(): void
+    {
+        $this->artisan('jokot:admin', ['email' => 'Beheer@Jokot.be', '--name' => 'Beheer'])
+            ->expectsQuestion('Wachtwoord (minstens 8 tekens)', 'geheim-wachtwoord')
+            ->expectsQuestion('Herhaal het wachtwoord', 'geheim-wachtwoord')
+            ->assertSuccessful();
+
+        $user = User::query()->where('email', 'beheer@jokot.be')->sole();
+        $this->assertTrue($user->hasPermission(Permissions::SECURITY));
+        $this->assertTrue(Hash::check('geheim-wachtwoord', $user->password));
     }
 }

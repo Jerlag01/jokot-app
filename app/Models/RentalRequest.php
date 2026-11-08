@@ -71,7 +71,7 @@ class RentalRequest extends Model implements HasContract
     {
         static::saved(function (RentalRequest $request): void {
             if ($request->status === RentalStatus::Confirmed && ($request->wasRecentlyCreated || $request->wasChanged('status'))) {
-                app(AutoContract::class)->onConfirmed($request);
+                app(AutoContract::class)->onConfirmed($request, (bool) settings()->get('rental_contract_auto_send'));
             }
         });
     }

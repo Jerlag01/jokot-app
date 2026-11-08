@@ -200,7 +200,7 @@ class CupLoanResource extends Resource
                     }
 
                     $record->update(['status' => CupLoanStatus::Confirmed]);
-                    Notification::make()->success()->title('Bevestigd. Verstuur nu het contract.')->send();
+                    Notification::make()->success()->title('Bevestigd')->send();
                 }),
             Action::make('reject')
                 ->label('Weigeren')

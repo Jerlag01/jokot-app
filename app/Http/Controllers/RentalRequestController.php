@@ -6,6 +6,7 @@ use App\Http\Requests\StoreRentalRequest;
 use App\Mail\RentalRequestReceived;
 use App\Models\RentalRequest;
 use App\Models\User;
+use App\Support\Mailing;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Http\RedirectResponse;
@@ -49,11 +50,13 @@ class RentalRequestController extends Controller
             ->sendToDatabase(User::query()->where('is_active', true)->get());
 
         try {
-            if (filled($boardAddress = settings()->get('notification_email'))) {
+            if (filled($boardAddress = settings()->get('notification_email')) && Mailing::allows('rental_board')) {
                 Mail::to($boardAddress)->send(new RentalRequestReceived($rental, forBoard: true));
             }
 
-            Mail::to($rental->email)->send(new RentalRequestReceived($rental));
+            if (Mailing::allows('rental_requester')) {
+                Mail::to($rental->email)->send(new RentalRequestReceived($rental));
+            }
         } catch (Throwable $exception) {
             report($exception);
         }

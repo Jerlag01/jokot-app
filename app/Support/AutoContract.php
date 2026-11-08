@@ -8,18 +8,25 @@ use Illuminate\Database\Eloquent\Model;
 use Throwable;
 
 /**
- * Once a reservation or cup loan is confirmed, its contract is drawn up and the signing link is mailed
- * to the requester (once; resending stays possible by hand).
+ * Once a reservation or cup loan is confirmed, its contract is drawn up. Depending on the settings the signing
+ * link is mailed at once (only once), or it waits until someone sends it by hand via "Contract".
  */
 class AutoContract
 {
     public function __construct(private Contracts $contracts) {}
 
-    public function onConfirmed(Model&HasContract $record): void
+    public function onConfirmed(Model&HasContract $record, bool $send = true): void
     {
         $contract = $this->contracts->forRecord($record);
 
         if ($contract->isSigned() || $contract->sent_at !== null) {
+            return;
+        }
+
+        if (! $send || ! Mailing::enabled()) {
+            Notification::make()->info()->title('Contract klaargezet')
+                ->body('Het contract is nog niet verstuurd. Verstuur het via "Contract" → "Contract versturen om te ondertekenen".')->send();
+
             return;
         }
 

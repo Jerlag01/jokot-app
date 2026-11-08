@@ -1,4 +1,4 @@
-@extends('layouts.site', ['title' => $page->title, 'description' => $page->meta_description])
+@extends('layouts.site', ['title' => $page->isHome() ? null : $page->title, 'description' => $page->meta_description, 'canonical' => $page->url()])
 
 @section('content')
     @php($blocks = $page->blocks ?? [])

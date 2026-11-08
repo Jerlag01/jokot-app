@@ -193,6 +193,8 @@ class Invoicing
      */
     public function send(Invoice $invoice, ?string $to = null, bool $reminder = false): void
     {
+        Mailing::ensureEnabled();
+
         if ($invoice->isDraft()) {
             $invoice->finalize();
         }

@@ -12,9 +12,13 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\PaymentWebhookController;
 use App\Http\Controllers\PurchaseInvoiceFileController;
 use App\Http\Controllers\RentalRequestController;
+use App\Http\Controllers\SeoController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PageController::class, 'home'])->name('home');
+
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('robots');
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
 
 Route::get('/agenda/{event:slug}', [EventController::class, 'show'])->name('events.show');
 Route::post('/agenda/{event:slug}/tickets', [OrderController::class, 'store'])->middleware('throttle:10,1')->name('orders.store');

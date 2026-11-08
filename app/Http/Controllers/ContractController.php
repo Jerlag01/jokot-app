@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\ContractMail;
 use App\Models\Contract;
 use App\Support\Contracts;
+use App\Support\Mailing;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -53,15 +54,17 @@ class ContractController extends Controller
             return back()->withErrors(['signature' => $exception->getMessage()]);
         }
 
-        try {
-            $copy = new ContractMail($contract->refresh(), signedCopy: true);
-            Mail::to($contract->contractable->contractSignerEmail())->send($copy);
+        if (Mailing::allows('signed_contract')) {
+            try {
+                $copy = new ContractMail($contract->refresh(), signedCopy: true);
+                Mail::to($contract->contractable->contractSignerEmail())->send($copy);
 
-            if (filled($board = settings()->get('notification_email'))) {
-                Mail::to($board)->send(new ContractMail($contract, signedCopy: true));
+                if (filled($board = settings()->get('notification_email'))) {
+                    Mail::to($board)->send(new ContractMail($contract, signedCopy: true));
+                }
+            } catch (Throwable $exception) {
+                report($exception);
             }
-        } catch (Throwable $exception) {
-            report($exception);
         }
 
         return redirect()->route('contracts.show', $token)->with('signed', true);

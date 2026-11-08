@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\Ticket;
 use App\Models\TicketType;
 use App\Models\User;
+use App\Support\Mailing;
 use App\Support\Payments\PaymentFailed;
 use App\Support\Payments\Payments;
 use App\Support\Qr;
@@ -171,7 +172,7 @@ class TicketSales
 
     public function mailTickets(Order $order): void
     {
-        if (blank($order->email)) {
+        if (blank($order->email) || ! Mailing::allows('tickets')) {
             return;
         }
 

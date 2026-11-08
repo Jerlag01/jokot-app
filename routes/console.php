@@ -4,6 +4,8 @@ use App\Enums\InvoiceStatus;
 use App\Models\BlockedIp;
 use App\Models\Invoice;
 use App\Models\LoginAttempt;
+use App\Models\Role;
+use App\Models\User;
 use App\Support\Billit\Billit;
 use App\Support\Security\GeoIp;
 use App\Support\Security\IpBlocker;
@@ -87,3 +89,30 @@ Artisan::command('logs:prune', function (VisitorStats $stats): void {
 })->purpose('Remove old login attempts, expired automatic blocks and old page views');
 
 Schedule::command('logs:prune')->dailyAt('03:40');
+
+Artisan::command('jokot:admin {email} {--name= : Name shown in the admin site}', function (): int {
+    $email = mb_strtolower(trim((string) $this->argument('email')));
+
+    if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $this->error('Geen geldig e-mailadres.');
+
+        return 1;
+    }
+
+    $password = (string) $this->secret('Wachtwoord (minstens 8 tekens)');
+
+    if (mb_strlen($password) < 8 || $password !== (string) $this->secret('Herhaal het wachtwoord')) {
+        $this->error('Wachtwoord te kort of niet gelijk.');
+
+        return 1;
+    }
+
+    $admin = Role::query()->firstOrCreate(['name' => 'Admin'], ['description' => 'Alles, ook gebruikers en instellingen.', 'is_admin' => true, 'permissions' => []]);
+    $user = User::query()->firstOrNew(['email' => $email]);
+    $user->fill(['name' => $this->option('name') ?: ($user->name ?: $email), 'password' => $password, 'is_active' => true])->save();
+    $user->roles()->syncWithoutDetaching([$admin->id]);
+
+    $this->info(($user->wasRecentlyCreated ? 'Beheerder aangemaakt: ' : 'Bijgewerkt en beheerder gemaakt: ').$email);
+
+    return 0;
+})->purpose('Create (or reset) an administrator for the admin site');

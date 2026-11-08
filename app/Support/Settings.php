@@ -44,6 +44,9 @@ class Settings
             'rentals_open' => true,
             // ISO weekdays (1 = monday ... 7 = sunday) on which the website accepts no rental requests at all.
             'rental_blocked_weekdays' => [],
+            // Confirming mails the contract signing link at once; off = send it by hand via "Contract".
+            'rental_contract_auto_send' => false,
+            'cup_contract_auto_send' => true,
             'logo' => null,
             // Invoicing
             'iban' => 'BE65 7380 4975 8796',
@@ -100,6 +103,14 @@ class Settings
                 'webhook_id' => null,
                 'webhook_secret' => null,
             ],
+            // Search engines and social media. Indexing is only ever allowed on the production site.
+            'seo' => [
+                'indexable' => true,
+                'description' => 'JH Jokot is het jeugdhuis van Niel: fuiven, optredens en activiteiten voor jongeren, en een zaal te huur voor feesten en evenementen tot 350 personen.',
+                'share_image' => null,
+                'google_verification' => null,
+                'bing_verification' => null,
+            ],
             // Login logging and automatic IP blocking.
             'security' => [
                 'auto_block' => true,
@@ -117,6 +128,12 @@ class Settings
             ],
             // Empty mailer = the .env configuration stays in effect. The password is stored encrypted.
             'mail' => [
+                // Master switch: off = the website sends no mail at all (only the test mail).
+                'enabled' => true,
+                'auto_rental_requester' => true,
+                'auto_rental_board' => true,
+                'auto_signed_contract' => true,
+                'auto_tickets' => true,
                 'mailer' => null,
                 'host' => null,
                 'port' => 587,

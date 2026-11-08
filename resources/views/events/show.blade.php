@@ -1,4 +1,8 @@
-@extends('layouts.site', ['title' => $event->title, 'description' => $event->summary])
+@extends('layouts.site', ['title' => $event->title, 'description' => $event->summary ?: strip_tags((string) $event->description), 'image' => $event->imageUrl(), 'ogType' => 'article', 'canonical' => route('events.show', $event)])
+
+@push('head')
+    <script type="application/ld+json">{!! \App\Support\Seo::event($event) !!}</script>
+@endpush
 
 @section('content')
     <section class="page-header @if ($event->imageUrl()) has-image @endif" @if ($event->imageUrl()) style="--header-image: url('{{ $event->imageUrl() }}')" @endif>

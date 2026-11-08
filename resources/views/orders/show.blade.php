@@ -1,4 +1,4 @@
-@extends('layouts.site', ['title' => 'Bestelling '.$order->number])
+@extends('layouts.site', ['title' => 'Bestelling '.$order->number, 'noindex' => true])
 
 @section('content')
     <section class="page-header">

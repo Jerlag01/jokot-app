@@ -2,13 +2,15 @@
 
 namespace App\Providers;
 
-use App\Support\Security\LoginAttemptListener;
 use App\Models\Page;
+use App\Support\Mailing;
+use App\Support\Security\LoginAttemptListener;
 use App\Support\Settings;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -30,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
         CarbonImmutable::setLocale('nl');
 
         Event::listen([Failed::class, Login::class], LoginAttemptListener::class);
+        Event::listen(MessageSending::class, [Mailing::class, 'filter']);
 
         View::composer('layouts.site', function ($view): void {
             try {

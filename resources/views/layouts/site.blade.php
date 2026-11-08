@@ -3,10 +3,45 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ isset($title) && $title !== settings()->siteName() ? $title.' - ' : '' }}{{ settings()->siteName() }}</title>
-    @if (! empty($description))
-        <meta name="description" content="{{ $description }}">
+    @php
+        $title = isset($title) && $title !== settings()->siteName() ? $title : null;
+        $pageTitle = $title ? $title.' - '.settings()->siteName() : trim(settings()->siteName().' - '.settings()->get('tagline'), ' -');
+        $metaDescription = \App\Support\Seo::description($description ?? null);
+        $indexable = \App\Support\Seo::indexable() && empty($noindex);
+        $canonical = $canonical ?? url()->current();
+        $shareImage = \App\Support\Seo::shareImage($image ?? null);
+    @endphp
+    <title>{{ $pageTitle }}</title>
+    <meta name="description" content="{{ $metaDescription }}">
+    <meta name="robots" content="{{ $indexable ? 'index, follow, max-image-preview:large' : 'noindex, nofollow' }}">
+    @if ($indexable)
+        <link rel="canonical" href="{{ $canonical }}">
     @endif
+    @if (filled(settings()->get('seo.google_verification')))
+        <meta name="google-site-verification" content="{{ settings()->get('seo.google_verification') }}">
+    @endif
+    @if (filled(settings()->get('seo.bing_verification')))
+        <meta name="msvalidate.01" content="{{ settings()->get('seo.bing_verification') }}">
+    @endif
+    <meta name="theme-color" content="#111111">
+
+    {{-- Open Graph (Facebook, WhatsApp, LinkedIn...) and X/Twitter cards --}}
+    <meta property="og:site_name" content="{{ settings()->siteName() }}">
+    <meta property="og:locale" content="nl_BE">
+    <meta property="og:type" content="{{ $ogType ?? 'website' }}">
+    <meta property="og:title" content="{{ $title ?? settings()->siteName() }}">
+    <meta property="og:description" content="{{ $metaDescription }}">
+    <meta property="og:url" content="{{ $canonical }}">
+    <meta property="og:image" content="{{ $shareImage }}">
+    <meta property="og:image:alt" content="{{ $title ?? settings()->siteName() }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $title ?? settings()->siteName() }}">
+    <meta name="twitter:description" content="{{ $metaDescription }}">
+    <meta name="twitter:image" content="{{ $shareImage }}">
+
+    <script type="application/ld+json">{!! \App\Support\Seo::siteGraph() !!}</script>
+    @stack('head')
+    <link rel="sitemap" type="application/xml" href="{{ route('sitemap') }}">
     <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">

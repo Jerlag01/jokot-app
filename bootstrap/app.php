@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AuthenticateApiToken;
 use App\Http\Middleware\BlockIps;
+use App\Http\Middleware\RobotsTag;
 use App\Http\Middleware\TrackPageView;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -21,7 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias(['api.token' => AuthenticateApiToken::class]);
         // Blocked IP addresses get nothing, not even the login page; public page views are counted.
         $middleware->prepend(BlockIps::class);
-        $middleware->web(append: [TrackPageView::class]);
+        $middleware->web(append: [TrackPageView::class, RobotsTag::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
