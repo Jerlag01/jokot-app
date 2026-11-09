@@ -17,6 +17,7 @@ use App\Models\RentalExtra;
 use App\Models\RentalRate;
 use App\Models\RentalRequest;
 use App\Support\Availability;
+use App\Support\Contracts;
 use App\Support\Invoicing;
 use App\Support\Permissions;
 use BackedEnum;
@@ -51,6 +52,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 use UnitEnum;
 
@@ -223,6 +225,14 @@ class RentalRequestResource extends Resource
                             TextEntry::make('quantity')->hiddenLabel()->suffix(' ×'),
                         ]),
                 ]),
+            Section::make('Geannuleerd door aanvrager')
+                ->visible(fn (RentalRequest $record): bool => $record->status === RentalStatus::Withdrawn)
+                ->columns(2)
+                ->schema([
+                    TextEntry::make('cancellation_reason')->label('Reden')->columnSpanFull(),
+                    TextEntry::make('cancelled_at')->label('Teruggetrokken op')->dateTime('d/m/Y H:i'),
+                    TextEntry::make('cancelledBy.name')->label('Door')->placeholder('-'),
+                ]),
             Section::make('Opvolging')
                 ->columns(4)
                 ->schema([
@@ -315,7 +325,49 @@ class RentalRequestResource extends Resource
             $make('confirm', RentalStatus::Confirmed, 'Bevestigen', Heroicon::OutlinedCheckCircle, [RentalStatus::New, RentalStatus::Option]),
             $make('reject', RentalStatus::Rejected, 'Weigeren', Heroicon::OutlinedXCircle, [RentalStatus::New, RentalStatus::Option]),
             $make('cancel', RentalStatus::Cancelled, 'Annuleren', Heroicon::OutlinedNoSymbol, [RentalStatus::Confirmed]),
+            self::withdrawAction(),
         ];
+    }
+
+    /**
+     * The requester calls the rental off: the contract is removed, the request is kept with the reason,
+     * and the date is free again on the request form.
+     */
+    public static function withdrawAction(): Action
+    {
+        return Action::make('withdraw')
+            ->label('Terugtrekken (aanvrager annuleert)')
+            ->icon(Heroicon::OutlinedArrowUturnLeft)
+            ->color('danger')
+            ->visible(fn (RentalRequest $record): bool => in_array($record->status, RentalStatus::withdrawable(), true))
+            ->modalHeading('Aanvraag terugtrekken')
+            ->modalDescription(fn (RentalRequest $record): string => 'De aanvrager annuleert de huur van '.$record->event_date->format('d/m/Y').'. '
+                .($record->contract ? 'Het contract'.($record->contract->isSigned() ? ' (ondertekend)' : '').' wordt verwijderd. ' : '')
+                .'De aanvraag blijft bewaard als "Geannuleerd door aanvrager" en de datum is weer vrij op het aanvraagformulier.')
+            ->schema([
+                Textarea::make('reason')->label('Reden van annulering')->required()->rows(3)->maxLength(2000),
+            ])
+            ->modalSubmitActionLabel('Terugtrekken')
+            ->action(function (RentalRequest $record, array $data): void {
+                DB::transaction(function () use ($record, $data): void {
+                    if ($contract = $record->contract()->first()) {
+                        app(Contracts::class)->delete($contract);
+                    }
+
+                    $record->update([
+                        'status' => RentalStatus::Withdrawn,
+                        'cancellation_reason' => $data['reason'],
+                        'cancelled_at' => now(),
+                        'cancelled_by' => auth()->id(),
+                    ]);
+                });
+
+                $record->unsetRelation('contract');
+
+                Notification::make()->success()->title('Aanvraag teruggetrokken')
+                    ->body($record->invoice ? 'Let op: er is al een factuur. Maak indien nodig een creditnota.' : 'De datum is weer vrij.')
+                    ->send();
+            });
     }
 
     /**

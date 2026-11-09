@@ -34,7 +34,7 @@ class ListRentalRequests extends ListRecords
         }
 
         $tabs['closed'] = Tab::make('Geweigerd/geannuleerd')
-            ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status', [RentalStatus::Rejected, RentalStatus::Cancelled]));
+            ->modifyQueryUsing(fn (Builder $query) => $query->whereIn('status', [RentalStatus::Rejected, RentalStatus::Cancelled, RentalStatus::Withdrawn]));
 
         return $tabs;
     }

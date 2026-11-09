@@ -124,6 +124,20 @@ class Contracts
     }
 
     /**
+     * Removes the contract altogether, signed or not, with its signature and PDF (e.g. the rental was called off).
+     */
+    public function delete(Contract $contract): void
+    {
+        foreach ([$contract->signature_path, $contract->pdf_path] as $path) {
+            if ($path) {
+                Storage::disk('local')->delete($path);
+            }
+        }
+
+        $contract->delete();
+    }
+
+    /**
      * Throws away the signature so the contract can be adjusted and signed again.
      */
     public function reset(Contract $contract): void

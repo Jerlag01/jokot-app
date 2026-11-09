@@ -22,6 +22,7 @@ class RentalRequest extends Model implements HasContract
     use HasFactory;
 
     protected $fillable = [
+        'cancellation_reason', 'cancelled_at', 'cancelled_by',
         'status', 'event_date', 'rental_rate_id', 'rental_extra_id',
         'first_name', 'last_name', 'organisation', 'company_number', 'email', 'phone',
         'street', 'house_number', 'box', 'postal_code', 'city',
@@ -43,6 +44,7 @@ class RentalRequest extends Model implements HasContract
             'deposit_paid_at' => 'datetime',
             'drinks_booked_at' => 'datetime',
             'corkage_bottles' => 'integer',
+            'cancelled_at' => 'datetime',
         ];
     }
 
@@ -92,6 +94,11 @@ class RentalRequest extends Model implements HasContract
         $number = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
 
         return $prefix.str_pad((string) $number, 3, '0', STR_PAD_LEFT);
+    }
+
+    public function cancelledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     public function rentalRate(): BelongsTo
