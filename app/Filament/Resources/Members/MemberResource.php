@@ -69,7 +69,7 @@ class MemberResource extends Resource
      */
     public static function getGloballySearchableAttributes(): array
     {
-        return ['first_name', 'last_name', 'email', 'member_number'];
+        return ['first_name', 'last_name', 'email', 'member_number', 'card_number'];
     }
 
     public static function getGlobalSearchResultTitle(Model $record): string
@@ -88,6 +88,15 @@ class MemberResource extends Resource
     public static function detailFields(): array
     {
         return [
+            TextInput::make('card_number')
+                ->label('Kaartnummer (barcode)')
+                ->placeholder('5 cijfers')
+                ->helperText('Het nummer onder de barcode op de lidkaart. Scan de kaart of typ het nummer.')
+                ->regex(Member::CARD_PATTERN)
+                ->validationMessages(['regex' => 'Een kaartnummer bestaat uit precies 5 cijfers.', 'unique' => 'Deze kaart is al aan een ander lid gekoppeld.'])
+                ->unique(ignoreRecord: true)
+                ->maxLength(5)
+                ->columnSpanFull(),
             TextInput::make('last_name')->label('Naam')->required()->maxLength(100),
             TextInput::make('first_name')->label('Voornaam')->required()->maxLength(100),
             TextInput::make('email')->label('E-mail')->email()->maxLength(150),
@@ -110,6 +119,7 @@ class MemberResource extends Resource
             ->modifyQueryUsing(fn (Builder $query) => $query->with('memberships'))
             ->columns([
                 TextColumn::make('member_number')->label('Nr.')->searchable()->sortable(),
+                TextColumn::make('card_number')->label('Kaart')->searchable()->sortable()->placeholder('-')->fontFamily('mono'),
                 TextColumn::make('last_name')->label('Naam')->searchable()->sortable(),
                 TextColumn::make('first_name')->label('Voornaam')->searchable()->sortable(),
                 TextColumn::make('address')->label('Adres')->state(fn (Member $record): ?string => $record->address())->placeholder('-')->toggleable(),

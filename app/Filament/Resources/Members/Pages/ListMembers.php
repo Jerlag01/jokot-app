@@ -18,6 +18,13 @@ class ListMembers extends ListRecords
 {
     protected static string $resource = MemberResource::class;
 
+    public function mount(): void
+    {
+        Member::completeMissing();
+
+        parent::mount();
+    }
+
     public function listYear(): int
     {
         return (int) ($this->tableFilters['year']['value'] ?? now()->year);

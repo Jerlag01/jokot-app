@@ -225,6 +225,7 @@ sudo crontab -u www-data -e
 | Task | When | What |
 |---|---|---|
 | `tickets:expire-orders` | every 5 minutes | releases tickets of unpaid online orders |
+| `members:complete` | every minute | gives members added by the POS a member number and QR code |
 | `billit:sync` | hourly | delivery/payment status from Billit, incoming invoices |
 | `logs:prune` | daily 03:40 | removes old login attempts and page views |
 | `geoip:update` | monthly | refreshes the DB-IP country database |

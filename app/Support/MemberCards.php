@@ -47,16 +47,16 @@ class MemberCards
     {
         $path = tempnam(sys_get_temp_dir(), 'leden').'.xlsx';
         $options = new Options;
-        $options->setColumnWidthForRange(18, 1, 11);
+        $options->setColumnWidthForRange(18, 1, 12);
 
         $writer = new Writer($options);
         $writer->openToFile($path);
         $writer->getCurrentSheet()->setName('Leden '.$year);
-        $writer->addRow(Row::fromValues(['Lidnummer', 'Naam', 'Voornaam', 'Straat', 'Nr.', 'Bus', 'Postcode', 'Gemeente', 'E-mail', 'Telefoon', 'Lidgeld '.$year], (new Style)->setFontBold()));
+        $writer->addRow(Row::fromValues(['Lidnummer', 'Kaartnummer', 'Naam', 'Voornaam', 'Straat', 'Nr.', 'Bus', 'Postcode', 'Gemeente', 'E-mail', 'Telefoon', 'Lidgeld '.$year], (new Style)->setFontBold()));
 
         foreach ($members as $member) {
             $writer->addRow(Row::fromValues([
-                $member->member_number, $member->last_name, $member->first_name, $member->street, $member->house_number, $member->box,
+                $member->member_number, $member->card_number, $member->last_name, $member->first_name, $member->street, $member->house_number, $member->box,
                 $member->postal_code, $member->city, $member->email, $member->phone,
                 (float) ($member->memberships->firstWhere('year', $year)?->amount ?? 0),
             ]));

@@ -4,6 +4,7 @@ use App\Enums\InvoiceStatus;
 use App\Models\BlockedIp;
 use App\Models\Invoice;
 use App\Models\LoginAttempt;
+use App\Models\Member;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\Billit\Billit;
@@ -116,3 +117,12 @@ Artisan::command('jokot:admin {email} {--name= : Name shown in the admin site}',
 
     return 0;
 })->purpose('Create (or reset) an administrator for the admin site');
+
+Artisan::command('members:complete', function (): void {
+    $count = Member::completeMissing();
+
+    if ($count > 0) {
+        $this->info("{$count} lid/leden aangevuld met lidnummer en QR-code.");
+    }
+})->purpose('Gives members added by the POS a member number and QR token');
+Schedule::command('members:complete')->everyMinute()->withoutOverlapping();
