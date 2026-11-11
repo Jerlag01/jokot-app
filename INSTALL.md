@@ -226,6 +226,7 @@ sudo crontab -u www-data -e
 |---|---|---|
 | `tickets:expire-orders` | every 5 minutes | releases tickets of unpaid online orders |
 | `members:complete` | every minute | gives members added by the POS a member number and QR code |
+| `topups:expire` | every 15 minutes | checks open online card top-ups, gives up unpaid ones after a day |
 | `billit:sync` | hourly | delivery/payment status from Billit, incoming invoices |
 | `logs:prune` | daily 03:40 | removes old login attempts and page views |
 | `geoip:update` | monthly | refreshes the DB-IP country database |
@@ -247,6 +248,9 @@ Log in at `https://<domain>/admin` with the account from step 5 and go through *
    - Stripe: secret key, and a webhook in the Stripe dashboard to `https://<domain>/webhooks/stripe`
      with the `checkout.session.*` events; paste its signing secret.
    - SumUp: API key and merchant code (no webhook to configure; the return URL is sent with each payment).
+   - Lidkaart opladen: on/off, suggested amounts, minimum/maximum per top-up and maximum balance. The public
+     page is `/opladen`; add it to the site menu or a page. Members also top up from the page behind the QR
+     code on their card.
 6. **Billit & Doccle**: API key and environment, "Billit testen", then "Billit-webhook registreren".
 7. **Beveiliging**: add your own IP addresses to "Nooit blokkeren" so you cannot lock yourself out.
 

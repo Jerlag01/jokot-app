@@ -177,6 +177,16 @@ class Settings extends Page
                                 Toggle::make('tickets_open')->label('Online ticketverkoop aan (algemene schakelaar)'),
                                 TextInput::make('payments.order_minutes')->label('Tickets vasthouden tijdens betalen (minuten)')->numeric()->minValue(30)->maxValue(120)->required()->helperText('Minimum 30 (vereist door Stripe).'),
                             ]),
+                        Section::make('Lidkaart opladen')
+                            ->description(new HtmlString('Leden zetten online budget op hun lidkaart (via Stripe of SumUp hieronder) en betalen ermee aan de toog. Pagina: <a href="'.e(route('card-topups.create')).'" target="_blank" style="text-decoration:underline;">'.e(route('card-topups.create')).'</a>'))
+                            ->columns(2)
+                            ->schema([
+                                Toggle::make('topup.enabled')->label('Online opladen toelaten')->columnSpanFull(),
+                                TextInput::make('topup.presets')->label('Voorgestelde bedragen')->helperText('Gescheiden door komma\'s, bv. 10,20,50.')->regex('/^\s*\d+(\s*,\s*\d+)*\s*$/'),
+                                TextInput::make('topup.min')->label('Minimum per keer')->numeric()->prefix('€')->minValue(1)->required(),
+                                TextInput::make('topup.max')->label('Maximum per keer')->numeric()->prefix('€')->minValue(1)->required(),
+                                TextInput::make('topup.max_balance')->label('Maximaal saldo op een kaart')->numeric()->prefix('€')->helperText('Leeg = geen maximum.'),
+                            ]),
                         Section::make('Stripe')
                             ->description(new HtmlString('Hosted checkout (Bancontact, kaarten, ...). Maak in het Stripe-dashboard een webhook naar <code>'.e(route('webhooks.stripe')).'</code> met de events <code>checkout.session.completed</code> en <code>checkout.session.async_payment_succeeded</code>.'))
                             ->columns(2)
@@ -346,7 +356,7 @@ class Settings extends Page
         }
 
         // Nested groups keep the keys hidden fields did not send.
-        foreach (['mail', 'payments', 'billit', 'security', 'stats', 'seo'] as $group) {
+        foreach (['mail', 'payments', 'billit', 'security', 'stats', 'seo', 'topup'] as $group) {
             $data[$group] = [...(array) $settings->get($group), ...($data[$group] ?? [])];
         }
 

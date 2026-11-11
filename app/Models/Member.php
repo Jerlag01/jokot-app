@@ -84,6 +84,19 @@ class Member extends Model
         return static::query()->where('card_number', preg_replace('/\s+/', '', $cardNumber))->first();
     }
 
+    public function cardTransactions(): HasMany
+    {
+        return $this->hasMany(MemberCardTransaction::class)->latest('id');
+    }
+
+    /**
+     * The budget left on the card: every completed top-up, purchase and correction.
+     */
+    public function cardBalance(): float
+    {
+        return round((float) $this->cardTransactions()->completed()->sum('amount'), 2);
+    }
+
     public function memberships(): HasMany
     {
         return $this->hasMany(Membership::class)->orderByDesc('year');

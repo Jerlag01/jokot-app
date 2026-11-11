@@ -82,6 +82,14 @@ class Settings
             'member_fee' => 5,
             // Ticket sales. Secrets are stored encrypted.
             'tickets_open' => true,
+            // Budget on the member card, topped up online and spent at the POS.
+            'topup' => [
+                'enabled' => true,
+                'presets' => '10,20,50',
+                'min' => 5,
+                'max' => 150,
+                'max_balance' => 250,
+            ],
             'payments' => [
                 'stripe_enabled' => false,
                 'stripe_secret' => null,
@@ -134,6 +142,7 @@ class Settings
                 'auto_rental_board' => true,
                 'auto_signed_contract' => true,
                 'auto_tickets' => true,
+                'auto_card_topup' => true,
                 'mailer' => null,
                 'host' => null,
                 'port' => 587,

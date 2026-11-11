@@ -8,6 +8,7 @@ use App\Models\Member;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\Billit\Billit;
+use App\Support\CardTopUps;
 use App\Support\Security\GeoIp;
 use App\Support\Security\IpBlocker;
 use App\Support\Stats\VisitorStats;
@@ -126,3 +127,12 @@ Artisan::command('members:complete', function (): void {
     }
 })->purpose('Gives members added by the POS a member number and QR token');
 Schedule::command('members:complete')->everyMinute()->withoutOverlapping();
+
+Artisan::command('topups:expire', function (): void {
+    $failed = app(CardTopUps::class)->expireStale();
+
+    if ($failed > 0) {
+        $this->info("{$failed} onbetaalde oplading(en) afgesloten.");
+    }
+})->purpose('Checks open online card top-ups and gives up unpaid ones after a day');
+Schedule::command('topups:expire')->everyFifteenMinutes()->withoutOverlapping();

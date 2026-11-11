@@ -9,12 +9,42 @@
     </section>
     <section class="section">
         <div class="container narrow">
+            @if ($member->card_number)
+                <div class="card-balance" id="saldo">
+                    <h2>Saldo op je lidkaart</h2>
+                    <p class="card-balance-amount">{{ euro($balance) }}</p>
+                    <p class="muted small">Kaart {{ $member->card_number }} &middot; te gebruiken aan de toog</p>
+                </div>
+                @if ($topUps->enabled())
+                    @error('amount')<div class="alert alert-error" role="alert">{{ $message }}</div>@enderror
+                    <form method="post" action="{{ route('members.topup', $member->token) }}" class="form">
+                        @csrf
+                        @include('card-topups.partials.amount-fields', ['legend' => 'Kaart opladen'])
+                        <button type="submit" class="button">Opladen en betalen</button>
+                    </form>
+                @endif
+                @if ($transactions->isNotEmpty())
+                    <table class="table" style="margin: 1.5rem 0 2.5rem;">
+                        <thead><tr><th>Datum</th><th>Omschrijving</th><th style="text-align:right">Bedrag</th></tr></thead>
+                        <tbody>
+                            @foreach ($transactions as $transaction)
+                                <tr>
+                                    <td>{{ ($transaction->completed_at ?? $transaction->created_at)?->format('d/m/Y H:i') }}</td>
+                                    <td>{{ $transaction->description ?: $transaction->type?->getLabel() }}</td>
+                                    <td style="text-align:right; white-space:nowrap;">{{ (float) $transaction->amount > 0 ? '+' : '' }}{{ euro($transaction->amount) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                @endif
+            @endif
+            <h2>Mijn gegevens</h2>
             <p>Hier pas je je gegevens aan die we bijhouden in onze ledenlijst. We gebruiken ze enkel om je te contacteren over het jeugdhuis.</p>
             @if (session('saved'))
                 <div class="alert alert-success" role="status"><strong>Bedankt, je gegevens zijn opgeslagen.</strong></div>
             @endif
-            @if ($errors->any())
-                <div class="alert alert-error" role="alert"><ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
+            @if ($errors->hasAny(['first_name', 'last_name', 'street', 'house_number', 'box', 'postal_code', 'city', 'email', 'phone']))
+                <div class="alert alert-error" role="alert"><ul>@foreach ($errors->getMessages() as $field => $messages)@continue($field === 'amount')@foreach ($messages as $error)<li>{{ $error }}</li>@endforeach@endforeach</ul></div>
             @endif
             <form method="post" action="{{ route('members.update', $member->token) }}" class="form">
                 @csrf

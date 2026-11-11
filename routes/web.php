@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BillitWebhookController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CardTopUpController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\CupLoanRequestController;
 use App\Http\Controllers\EventController;
@@ -40,6 +41,12 @@ Route::get('/admin/files/purchase-invoices/{purchaseInvoice}', PurchaseInvoiceFi
 Route::get('/admin/files/insurances/{insurance}/{index}', InsuranceDocumentController::class)->whereNumber('index')->name('insurances.document');
 
 // The QR on the member card. The random token is the only key, so the page is not indexed.
+Route::get('/opladen', [CardTopUpController::class, 'create'])->name('card-topups.create');
+Route::post('/opladen', [CardTopUpController::class, 'store'])->middleware('throttle:10,1')->name('card-topups.store');
+Route::get('/opladen/{topUp}', [CardTopUpController::class, 'show'])->name('card-topups.show');
+Route::post('/opladen/{topUp}/betalen', [CardTopUpController::class, 'pay'])->middleware('throttle:10,1')->name('card-topups.pay');
+Route::post('/lid/{token}/opladen', [CardTopUpController::class, 'storeForMember'])->middleware('throttle:10,1')->name('members.topup');
+
 Route::get('/lid/{token}', [MemberSelfServiceController::class, 'edit'])->name('members.edit');
 Route::put('/lid/{token}', [MemberSelfServiceController::class, 'update'])->middleware('throttle:10,1')->name('members.update');
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
+use App\Support\CardTopUps;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,7 +20,14 @@ class MemberSelfServiceController extends Controller
 
     public function edit(string $token): View
     {
-        return view('members.edit', ['member' => $this->find($token)]);
+        $member = $this->find($token);
+
+        return view('members.edit', [
+            'member' => $member,
+            'topUps' => app(CardTopUps::class),
+            'balance' => $member->cardBalance(),
+            'transactions' => $member->cardTransactions()->completed()->limit(15)->get(),
+        ]);
     }
 
     public function update(Request $request, string $token): RedirectResponse

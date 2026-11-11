@@ -27,6 +27,7 @@ class Mailing
             'rental_board' => 'Nieuwe huuraanvraag naar het meldingsadres',
             'signed_contract' => 'Kopie van het ondertekende contract (huurder en meldingsadres)',
             'tickets' => 'Tickets na een online aankoop',
+            'card_topup' => 'Bevestiging na het online opladen van een lidkaart',
         ];
     }
 

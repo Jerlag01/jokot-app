@@ -24,6 +24,7 @@ class SeoController extends Controller
                 'Disallow: /bestelling/',
                 'Disallow: /contract/',
                 'Disallow: /lid/',
+                'Disallow: /opladen/',
                 'Disallow: /kalender',
                 'Disallow: /webhooks/',
                 '',

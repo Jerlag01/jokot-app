@@ -23,4 +23,17 @@ interface PaymentGateway
     public function paidTransaction(Order $order): ?string;
 
     public function refund(Order $order): void;
+
+    /**
+     * A checkout for one amount (no order).
+     *
+     * @return array{reference: string, url: string}
+     */
+    public function createCheckout(CheckoutRequest $request): array;
+
+    /**
+     * The provider's transaction id when the checkout is paid, null while it is not (yet).
+     * Throws PaymentFailed when it failed or expired.
+     */
+    public function checkoutTransaction(string $reference): ?string;
 }

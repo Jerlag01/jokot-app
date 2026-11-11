@@ -69,6 +69,51 @@ class StripeGateway implements PaymentGateway
         return (string) $response->json('url');
     }
 
+    public function createCheckout(CheckoutRequest $request): array
+    {
+        $metadata = [];
+
+        foreach ($request->metadata as $key => $value) {
+            $metadata["metadata[{$key}]"] = $value;
+        }
+
+        $response = $this->client()->post('checkout/sessions', array_filter([
+            'mode' => 'payment',
+            'locale' => 'nl',
+            'customer_email' => $request->email,
+            'client_reference_id' => $request->reference,
+            'success_url' => $request->returnUrl,
+            'cancel_url' => $request->cancelUrl,
+            'expires_at' => max(now()->addMinutes(31)->timestamp, $request->expiresAt?->timestamp ?? 0),
+            'line_items[0][quantity]' => 1,
+            'line_items[0][price_data][currency]' => 'eur',
+            'line_items[0][price_data][unit_amount]' => (int) round($request->amount * 100),
+            'line_items[0][price_data][product_data][name]' => $request->description,
+            ...$metadata,
+        ], fn ($value): bool => $value !== null));
+
+        if ($response->failed()) {
+            throw new RuntimeException('Stripe: '.($response->json('error.message') ?? $response->status()));
+        }
+
+        return ['reference' => (string) $response->json('id'), 'url' => (string) $response->json('url')];
+    }
+
+    public function checkoutTransaction(string $reference): ?string
+    {
+        $session = $this->client()->get('checkout/sessions/'.$reference)->throw()->json();
+
+        if (($session['payment_status'] ?? null) === 'paid') {
+            return (string) ($session['payment_intent'] ?? $reference);
+        }
+
+        if (($session['status'] ?? null) === 'expired') {
+            throw new PaymentFailed('De betaalsessie is verlopen.');
+        }
+
+        return null;
+    }
+
     public function paidTransaction(Order $order): ?string
     {
         if (blank($order->provider_reference)) {

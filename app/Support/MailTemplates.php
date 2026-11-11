@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Mail\CardTopUpMail;
 use App\Mail\ContractMail;
 use App\Mail\InvoiceMail;
 use App\Mail\OrderTicketsMail;
@@ -9,6 +10,7 @@ use App\Mail\RentalRequestReceived;
 use App\Models\Contract;
 use App\Models\Invoice;
 use App\Models\MailTemplate;
+use App\Models\MemberCardTransaction;
 use App\Models\Order;
 use App\Models\RentalRequest;
 use Illuminate\Mail\Mailable;
@@ -87,6 +89,18 @@ class MailTemplates
                 'placeholders' => self::invoicePlaceholders(),
                 'blocks' => ['betaalgegevens' => 'tabel met bedrag, vervaldag, rekeningnummer en mededeling'],
             ],
+            'card_topup' => [
+                'label' => 'Lidkaart opgeladen',
+                'description' => 'Na een online betaling om budget op de lidkaart te zetten.',
+                'subject' => 'Je lidkaart is opgeladen ({bedrag})',
+                'body' => "Hallo {voornaam},\n\nBedankt! Er staat **{bedrag}** extra op je lidkaart. Je kan het gebruiken aan de toog van {site}.\n\n{overzicht}\n\n{knop}\n\nTot snel!<br>\n{site}",
+                'placeholders' => [
+                    'naam' => 'naam van het lid', 'voornaam' => 'voornaam van het lid', 'kaartnummer' => 'nummer van de lidkaart',
+                    'bedrag' => 'opgeladen bedrag', 'saldo' => 'nieuw saldo', 'datum' => 'datum en uur',
+                    ...self::commonPlaceholders(),
+                ],
+                'blocks' => ['overzicht' => 'tabel met kaart, bedrag, nieuw saldo en datum', 'knop' => 'knop naar de ledenpagina met saldo en overzicht'],
+            ],
             'order_tickets' => [
                 'label' => 'Tickets na een aankoop',
                 'description' => 'Na een betaalde online bestelling of kassaverkoop met e-mailadres, met de tickets (PDF) in bijlage.',
@@ -136,6 +150,8 @@ class MailTemplates
                 ? new InvoiceMail($invoice, reminder: $key === 'invoice_reminder') : null,
             'order_tickets' => ($order = Order::query()->whereHas('event')->latest('id')->first())
                 ? new OrderTicketsMail($order) : null,
+            'card_topup' => ($topUp = MemberCardTransaction::query()->where('amount', '>', 0)->whereHas('member')->latest('id')->first())
+                ? new CardTopUpMail($topUp) : null,
         };
     }
 

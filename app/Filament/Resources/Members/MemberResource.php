@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Filament\Concerns\RequiresPermission;
 use App\Filament\Resources\Members\Pages\EditMember;
 use App\Filament\Resources\Members\Pages\ListMembers;
+use App\Filament\Resources\Members\RelationManagers\CardTransactionsRelationManager;
 use App\Filament\Resources\Members\RelationManagers\MembershipsRelationManager;
 use App\Models\Member;
 use App\Support\MemberCards;
@@ -116,10 +117,11 @@ class MemberResource extends Resource
     {
         return $table
             ->defaultSort('last_name')
-            ->modifyQueryUsing(fn (Builder $query) => $query->with('memberships'))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('memberships')->withSum(['cardTransactions as card_balance' => fn (Builder $query) => $query->completed()->reorder()], 'amount'))
             ->columns([
                 TextColumn::make('member_number')->label('Nr.')->searchable()->sortable(),
                 TextColumn::make('card_number')->label('Kaart')->searchable()->sortable()->placeholder('-')->fontFamily('mono'),
+                TextColumn::make('card_balance')->label('Saldo')->money('EUR', locale: 'nl_BE')->sortable()->placeholder('-')->toggleable(),
                 TextColumn::make('last_name')->label('Naam')->searchable()->sortable(),
                 TextColumn::make('first_name')->label('Voornaam')->searchable()->sortable(),
                 TextColumn::make('address')->label('Adres')->state(fn (Member $record): ?string => $record->address())->placeholder('-')->toggleable(),
@@ -200,7 +202,7 @@ class MemberResource extends Resource
 
     public static function getRelations(): array
     {
-        return [MembershipsRelationManager::class];
+        return [MembershipsRelationManager::class, CardTransactionsRelationManager::class];
     }
 
     public static function getPages(): array

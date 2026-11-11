@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Enums\PaymentProvider;
+use App\Models\MemberCardTransaction;
 use App\Models\Order;
+use App\Support\CardTopUps;
 use App\Support\Payments\StripeGateway;
 use App\Support\Ticketing\TicketSales;
 use Illuminate\Http\Request;
@@ -32,6 +34,15 @@ class PaymentWebhookController extends Controller
             if ($order) {
                 $sales->sync($order);
             }
+
+            $topUp = MemberCardTransaction::query()
+                ->where('provider', PaymentProvider::Stripe)
+                ->where(fn ($query) => $query->where('provider_reference', $session['id'] ?? '')->orWhere('id', $session['metadata']['card_topup_id'] ?? 0))
+                ->first();
+
+            if ($topUp) {
+                app(CardTopUps::class)->sync($topUp);
+            }
         }
 
         return response('ok');
@@ -46,6 +57,12 @@ class PaymentWebhookController extends Controller
 
             if ($order) {
                 $sales->sync($order);
+            }
+
+            $topUp = MemberCardTransaction::query()->where('provider', PaymentProvider::SumUp)->where('provider_reference', $checkoutId)->first();
+
+            if ($topUp) {
+                app(CardTopUps::class)->sync($topUp);
             }
         }
 

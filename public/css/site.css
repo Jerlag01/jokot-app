@@ -230,3 +230,8 @@ p { margin: 0 0 1.1em; }
 .contract-body th { color: var(--heading); background: var(--surface-2); }
 .signature-pad { width: 100%; max-width: 600px; height: 200px; background: #fff; border-radius: 8px; touch-action: none; cursor: crosshair; }
 .link-button { background: none; border: 0; padding: 0; color: var(--primary); font: inherit; cursor: pointer; text-decoration: underline; }
+
+/* Member card balance (member page) */
+.card-balance { border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; }
+.card-balance h2 { font-size: 1rem; margin: 0 0 .25rem; }
+.card-balance-amount { font-size: 2.25rem; font-weight: 700; line-height: 1.1; margin: 0 0 .25rem; }
